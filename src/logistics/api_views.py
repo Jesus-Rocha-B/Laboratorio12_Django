@@ -9,14 +9,24 @@ from .serializers import (
 )
 
 
-# Ejercicio 11: ModelViewSet para el recurso simple Material
+# Ejercicio 11: ModelViewSet para el recurso simple Material (Panel de Insumos)
 class MaterialViewSet(viewsets.ModelViewSet):
-    queryset = Material.objects.select_related('categoria')
     serializer_class = MaterialSerializer
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['nombre', 'unidad_medida', 'categoria__nombre']
     ordering_fields = ['precio_unitario', 'stock', 'nombre']
     ordering = ['id']
+
+    def get_queryset(self):
+        qs = Material.objects.select_related('categoria').all()
+        # Filtro por parámetro de categoría (?categoria=)
+        categoria = self.request.query_params.get('categoria')
+        if categoria:
+            if categoria.isdigit():
+                qs = qs.filter(categoria_id=int(categoria))
+            else:
+                qs = qs.filter(categoria__nombre__iexact=categoria)
+        return qs
 
     # Ejercicio 13: Acción personalizada que reutiliza el método .con_stock() de MaterialQuerySet (Semana 7)
     @action(detail=False, methods=['get'])
