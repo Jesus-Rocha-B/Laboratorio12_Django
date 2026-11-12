@@ -1,7 +1,17 @@
 // Fila del listado: muestra un material y avisa al padre con las funciones
-// que recibe. La fila no toca el arreglo; solo envía el id.
-function FilaMaterial({ material, onReponer, onEliminar }) {
+// que recibe. Incluye confirmación previa antes de eliminar (Ejercicio 12).
+function FilaMaterial({ material, onReponer, onEliminar, onEditar }) {
   const sinStock = material.stock === 0
+
+  // Confirmación previa antes de ejecutar DELETE (Ejercicio 12)
+  const handleEliminarConConfirmacion = () => {
+    const confirmado = window.confirm(
+      `¿Está seguro de que desea eliminar el insumo "${material.nombre}"?\nEsta acción ejecutará una solicitud DELETE a la API.`
+    )
+    if (confirmado) {
+      onEliminar(material.id)
+    }
+  }
 
   return (
     <tr>
@@ -15,10 +25,26 @@ function FilaMaterial({ material, onReponer, onEliminar }) {
         {sinStock && <span className="etiqueta agotado">Sin stock</span>}
       </td>
       <td className="acciones">
+        {onEditar && (
+          <button
+            type="button"
+            className="boton"
+            style={{ background: '#334155', marginRight: '6px' }}
+            onClick={() => onEditar(material)}
+            title="Editar este insumo con PATCH/PUT"
+          >
+            Editar
+          </button>
+        )}
         <button type="button" className="boton" onClick={() => onReponer(material.id)}>
           Reponer +10
         </button>
-        <button type="button" className="boton secundario" onClick={() => onEliminar(material.id)}>
+        <button
+          type="button"
+          className="boton secundario"
+          onClick={handleEliminarConConfirmacion}
+          title="Eliminar con confirmación previa y DELETE"
+        >
           Eliminar
         </button>
       </td>

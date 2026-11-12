@@ -2,7 +2,7 @@ import FilaMaterial from './FilaMaterial'
 
 // Listado: recibe los materiales y las funciones del padre, y dibuja una
 // fila por cada material. Solo pasa las funciones hacia abajo.
-function ListadoMateriales({ materiales, onReponer, onEliminar }) {
+function ListadoMateriales({ materiales, onReponer, onEliminar, onEditar }) {
   return (
     <table className="tabla">
       <thead>
@@ -28,6 +28,7 @@ function ListadoMateriales({ materiales, onReponer, onEliminar }) {
             material={material}
             onReponer={onReponer}
             onEliminar={onEliminar}
+            onEditar={onEditar}
           />
         ))}
       </tbody>

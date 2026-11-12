@@ -5,7 +5,7 @@ function FiltroMateriales({ texto, categoria, onCambiarTexto, onCambiarCategoria
     <div className="filtro">
       <input
         type="search"
-        placeholder="Buscar insumo por nombre..."
+        placeholder="Buscar insumo por nombre (envía ?search= a la API)..."
         value={texto}
         onChange={(e) => onCambiarTexto(e.target.value)}
       />
@@ -14,6 +14,7 @@ function FiltroMateriales({ texto, categoria, onCambiarTexto, onCambiarCategoria
         <option value="Telas y Tejidos">Telas y Tejidos</option>
         <option value="Avíos y Fornituras">Avíos y Fornituras</option>
         <option value="Hilados y Conos">Hilados y Conos</option>
+        <option value="Empaque y Etiquetas">Empaque y Etiquetas</option>
       </select>
     </div>
   )
