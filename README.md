@@ -1,94 +1,150 @@
-# Laboratorio 11 — Comunicación entre componentes en React
+# Laboratorio 12 — Peticiones Ajax con ReactJS y Django REST Framework
 
 - **Curso:** Desarrollo de Aplicaciones Empresariales — Tecsup, 2026-II
 - **Integrantes:**
   - Erick Arturo Gamarra Mundaca
   - Jesús Enrique Rocha Bobadilla
-- **Repositorio:** https://github.com/ErickGamarra/Django_Lab11
+- **Repositorio:** https://github.com/Jesus-Rocha-B/Laboratorio12_Django
 
-Este laboratorio parte del proyecto del Laboratorio 10 (UrbanTrend: tienda de
-ropa + módulo de logística textil, con backend en Django y frontend en React +
-Vite). En la Semana 11 los componentes dejan de trabajar cada uno por su lado:
-los datos bajan del padre al hijo por props y los hijos avisan al padre con
-funciones que también reciben por props.
+---
 
-Todavía no se consume la API; los datos están escritos a mano con la misma
-forma que devuelve la API de la Semana 8 (los decimales como texto).
+## Descripción del Proyecto
 
-## Cómo ejecutarlo
+Este laboratorio conecta el front-end de React (desarrollado con Vite) con el backend de Django REST Framework de la Semana 8. Se reemplazan los datos estáticos por peticiones asíncronas HTTP (AJAX) utilizando **Axios** y hooks de React (**`useEffect`**, **`useState`**, **`useCallback`**), implementando el ciclo completo CRUD con validación de negocio y estados de carga y error.
 
-```bash
+La aplicación consta de dos secciones principales:
+1. **Parte 1 — Práctica (`frontend/src/practica/ListaPractica.jsx`):** Consumo del recurso simple `Prenda` (`/api/prendas/`) probando solicitudes GET con estados de carga/error, POST con validación 400 (`validate_precio`), DELETE (204) y PATCH (200), además de búsqueda con `?search=`.
+2. **Parte 2 — Panel de Insumos Textiles (`frontend/src/components/PanelMateriales.jsx`):** Gestión integral de la entidad `Material` del módulo `logistics` con listado dinámico, alta controlada (POST 201), edición (PATCH 200), eliminación con confirmación (DELETE 204 / 404), filtros combinados (`?search=` y `?categoria=`) y cancelación de peticiones con `AbortController`.
+
+---
+
+## Cómo ejecutar el proyecto (Django y React en simultáneo)
+
+El proyecto requiere ejecutar dos terminales en paralelo:
+
+### Terminal 1 — Backend (Django en puerto 8000)
+
+```powershell
+# 1. Posicionarse en la carpeta src del backend
+cd src
+
+# 2. Verificar o aplicar migraciones
+python manage.py migrate
+
+# 3. Levantar el servidor de desarrollo en http://127.0.0.1:8000/
+python manage.py runserver
+```
+
+### Terminal 2 — Frontend (React + Vite en puerto 5173)
+
+```powershell
+# 1. Posicionarse en la carpeta frontend
 cd frontend
+
+# 2. Instalar dependencias (React, Vite, Axios)
 npm install
-npm run dev      # http://localhost:5173/
-npm run lint     # oxlint
-npm run build    # genera dist/ (no se sube al repositorio)
+
+# 3. Iniciar el servidor de desarrollo en http://localhost:5173/
+npm run dev
+
+# 4. Validar reglas de estilo y compilar para producción
+npm run lint    # oxlint: 0 advertencias, 0 errores
+npm run build   # vite build: genera compilado limpio
 ```
 
-En la barra superior hay tres opciones: **Parte 1 · Práctica**, **Parte 2 ·
-Panel de insumos** y **Laboratorio 10** (la pantalla del laboratorio anterior).
+---
 
-## Parte 1 — Práctica: cafetería con carrito (`frontend/src/practica`)
+## Configuración de CORS en Django
 
-| Archivo | Qué hace |
-| --- | --- |
-| `datos.js` | Cinco productos con `id`, `nombre`, `precio` (texto) y `stock`. |
-| `Practica.jsx` | Padre. Guarda el carrito, el texto de búsqueda y el aviso. |
-| `Catalogo.jsx` | Recibe los productos ya filtrados y dibuja un `ProductoCard` por cada uno. |
-| `ProductoCard.jsx` | Muestra un producto y su botón **Agregar** (desactivado si no hay stock). |
-| `Carrito.jsx` | Hermano del catálogo. Muestra las líneas, el total y las unidades (calculados con `reduce`), y cambia el título de la pestaña con `useEffect`. |
-| `Buscador.jsx` | Campo controlado; el texto vive en `Practica`. |
-| `Aviso.jsx` | Muestra "Agregado: …" y se cierra a los 3 s, limpiando el `setTimeout`. |
+Dado que el frontend corre en `http://localhost:5173` y el backend en `http://127.0.0.1:8000`, se configuró `django-cors-headers` para permitir que el navegador no bloquee las peticiones Ajax por la política del mismo origen (SOP):
 
-## Parte 2 — Panel de insumos textiles (`frontend/src/components`)
+1. **Instalación:**
+   ```powershell
+   pip install django-cors-headers
+   ```
+2. **Registro en `settings.py`:**
+   ```python
+   INSTALLED_APPS = [
+       # ...
+       'corsheaders',
+       'rest_framework',
+       'store',
+       'logistics',
+   ]
 
-Pantalla de gestión de la entidad **Material** del módulo `logistics`
-(insumos como telas, cierres y conos de hilo).
+   MIDDLEWARE = [
+       'corsheaders.middleware.CorsMiddleware',  # En la parte más alta
+       'django.middleware.security.SecurityMiddleware',
+       # ...
+   ]
 
-```
-PanelMateriales  (estado: materiales, texto, categoria, mensaje)
-├── ResumenMateriales   ← materiales
-├── FormularioMaterial  ← onGuardar        → avisa con el registro nuevo
-├── FiltroMateriales    ← texto, categoria → avisa con onCambiarTexto / onCambiarCategoria
-├── ListadoMateriales   ← materiales filtrados, onReponer, onEliminar
-│   └── FilaMaterial    ← material, onReponer, onEliminar → avisa con el id
-└── Notificacion        ← mensaje, onCerrar
-```
+   # Orígenes autorizados para peticiones Ajax
+   CORS_ALLOWED_ORIGINS = [
+       'http://localhost:5173',
+       'http://127.0.0.1:5173',
+   ]
+   ```
 
-- **Listado y filas:** cada fila tiene los botones *Reponer +10* y *Eliminar*.
-  La fila solo envía el `id`; el padre actualiza el arreglo con `map()` o
-  `filter()`.
-- **Formulario de alta:** campos controlados y las mismas reglas de la API:
-  nombre obligatorio, precio unitario mayor que cero y stock entero no
-  negativo. Si todo está bien, entrega el registro con `onGuardar` y se limpia.
-- **Resumen:** insumos registrados, cuántos están sin stock, precio promedio y
-  valor del inventario. Todo se calcula al dibujar, sin `useState`.
-- **Filtro:** por nombre y por categoría. Si nada coincide, la tabla lo indica.
-- **Efectos:** el título de la pestaña muestra la cantidad de insumos
-  (`useEffect` con `[materiales.length]`) y la notificación de cada acción se
-  cierra sola a los 3 s, con limpieza del temporizador.
+---
 
-### Por qué el estado está en `PanelMateriales`
+## Endpoints de la API REST utilizados
 
-La lista de materiales la necesitan tres componentes a la vez: el listado la
-muestra, el resumen calcula sus totales y el formulario agrega registros a
-ella. Si cada uno guardara su propia copia, quedarían desincronizadas. Por eso
-el arreglo vive en el padre común: los datos bajan por props y los cambios
-suben como avisos (`onGuardar`, `onReponer`, `onEliminar`, `onCambiarTexto`),
-y es el padre el único que llama a `setMateriales`.
+| Recurso / Entidad | Método HTTP | Endpoint | Código de Estado | Descripción / Parámetros |
+| :--- | :---: | :--- | :---: | :--- |
+| **Prendas** (Práctica) | `GET` | `/api/prendas/` | `200 OK` | Lista de prendas. Soporta `?search=<texto>`. |
+| **Prendas** (Práctica) | `POST` | `/api/prendas/` | `201 Created` / `400 Bad Request` | Alta de prenda. Valida `precio > 0`. |
+| **Prendas** (Práctica) | `PATCH` | `/api/prendas/<id>/` | `200 OK` | Modificación parcial de stock. |
+| **Prendas** (Práctica) | `DELETE` | `/api/prendas/<id>/` | `204 No Content` | Eliminación de registro. |
+| **Materiales** (Panel) | `GET` | `/api/materiales/` | `200 OK` | Lista de insumos. Soporta `?search=` y `?categoria=`. |
+| **Materiales** (Panel) | `POST` | `/api/materiales/` | `201 Created` / `400 Bad Request` | Alta de insumo. Valida `precio_unitario > 0`. |
+| **Materiales** (Panel) | `PATCH` | `/api/materiales/<id>/` | `200 OK` | Edición de campos y reabastecimiento de stock. |
+| **Materiales** (Panel) | `DELETE` | `/api/materiales/<id>/` | `204 No Content` / `404 Not Found` | Eliminación con confirmación previa. |
 
-## Estructura del repositorio
+---
+
+## Recorrido de una Petición HTTP (Arquitectura)
 
 ```
-Django_Lab11/
-├── frontend/          React + Vite (Semanas 9, 10 y 11)
-│   └── src/
-│       ├── practica/      Parte 1
-│       ├── components/    Parte 2 y componentes del Lab 10
-│       ├── App.jsx        menú de vistas
-│       └── Lab10.jsx      pantalla del laboratorio anterior
-├── src/               proyecto Django (store y logistics, API de la Semana 8)
-└── docs/              notas de laboratorios anteriores
+Usuario (interacción o carga de página)
+  └──> Componente React (useEffect / handleSubmit / onClick)
+         └──> Instancia Axios (api.get, api.post, api.patch, api.delete en src/api.js)
+                └──> Red HTTP (con encabezados CORS autorizados)
+                       └──> Django: URL -> Router -> ViewSet (SearchFilter / OrderingFilter)
+                              └──> Serializer (Validación validate_<campo> / Transformación JSON)
+                                     └──> Django ORM (QuerySet) -> Base de datos SQLite
+                                            └──> Response (Datos JSON + Código 200, 201, 204 o 400)
+                                                   └──> setState (Actualización inmutable con spread, map o filter)
+                                                          └──> React vuelve a dibujar la interfaz en el DOM
 ```
 
-`node_modules/` y `dist/` están en `.gitignore` y no se suben.
+---
+
+## Estructura del Proyecto
+
+```
+Laboratorio12_Django/
+├── frontend/
+│   ├── src/
+│   │   ├── api.js                   # Instancia centralizada de Axios (baseURL: http://127.0.0.1:8000/api)
+│   │   ├── practica/
+│   │   │   └── ListaPractica.jsx    # Parte 1: CRUD de prendas con GET, POST, PATCH, DELETE y búsqueda
+│   │   ├── components/
+│   │   │   ├── PanelMateriales.jsx  # Parte 2: Padre del panel de insumos textiles con API real
+│   │   │   ├── FormularioMaterial.jsx # Formulario controlado para alta (POST) y edición (PATCH)
+│   │   │   ├── ListadoMateriales.jsx  # Tabla de insumos con acciones
+│   │   │   ├── FilaMaterial.jsx     # Fila con botones Editar, Reponer y Eliminar (window.confirm)
+│   │   │   ├── FiltroMateriales.jsx # Buscador y filtro por categoría conectados a query params
+│   │   │   ├── ResumenMateriales.jsx# Estadísticas automáticas calculadas con datos de la API
+│   │   │   └── Notificacion.jsx     # Avisos temporizados con temporizador limpio
+│   │   ├── App.jsx                  # Navegación principal entre vistas
+│   │   └── App.css                  # Estilos visuales del sistema
+│   ├── package.json                 # Dependencias (incluye axios, react 19, vite)
+│   └── .gitignore                   # Excluye node_modules/ y dist/
+├── src/
+│   ├── config/                      # Configuración Django (settings.py con CORS, api_urls.py)
+│   ├── store/                       # Módulo tienda (PrendaViewSet, PrendaSerializer)
+│   ├── logistics/                   # Módulo logística (MaterialViewSet con filtrado ?categoria=)
+│   └── manage.py
+├── requirements.txt                 # Dependencias Python (incluye django-cors-headers)
+└── README.md
+```
