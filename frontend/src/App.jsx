@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import './App.css'
-import Practica from './practica/Practica'
+import ListaPractica from './practica/ListaPractica'
 import Lab10 from './Lab10'
 import PanelMateriales from './components/PanelMateriales'
 
@@ -29,7 +29,7 @@ function App() {
           </button>
         ))}
       </nav>
-      {vista === 'practica' && <Practica />}
+      {vista === 'practica' && <ListaPractica />}
       {vista === 'panel' && <PanelMateriales />}
       {vista === 'lab10' && <Lab10 />}
     </>
